@@ -9,7 +9,7 @@
  *
  *	I2C1
  *	PB6(SCL) --> (SCL) MPU6050
- *  PB7(SDA) --> (SDA) MPU6050
+ *	PB7(SDA) --> (SDA) MPU6050
  *
  *	DEVELOPMENT LOGS
  *
@@ -20,10 +20,10 @@
  *	1.x - Standy configuration (SLEEPDEEP System register and functions)
  *	1.x - Slow down clock from 72Mhz to 24Mhz (to decrease current consumption)
  *	1.x - Change I2C2 to I2C1 (pinout reasons)
- *  1.x - BLE connection library
- *  1.x - User configuration/ config mode					
+ *  	1.x - BLE connection library
+ *  	1.x - User configuration/ config mode					
  *	1.x - Acquision function with 1ms TIMER
- *  1.x - BLE send with trigger 10 ms TIMER
+ *  	1.x - BLE send with trigger 10 ms TIMER
  **************************************************************************/
 
 #include <libopencm3/stm32/rcc.h>
@@ -40,17 +40,17 @@
 #include "ble_usart.h"
 
 #define CONFIG_DEVICE	0
-#define RUNNING			1
+#define RUNNING		1
 #define READING_DATA	0
 #define SENDING_DATA	1
-#define i2c				I2C1
-#define usart			USART1
-#define NUM_SAMPLES		1024
-#define BUFFER_SIZE		6 * NUM_SAMPLES
+#define i2c		I2C1
+#define usart		USART1
+#define NUM_SAMPLES	1024
+#define BUFFER_SIZE	6 * NUM_SAMPLES
 
-volatile bool timer_mode	  = READING_DATA;
-volatile bool request_mpu6050 = false;
-volatile bool ble_send_packet = false;
+volatile bool timer_mode	= READING_DATA;
+volatile bool request_mpu6050 	= false;
+volatile bool ble_send_packet 	= false;
 
 /**************************************************************************
  * PROTOTIPES
@@ -98,9 +98,9 @@ int main(void){
 	if(Mode == RUNNING){
 		// TO DO: disable gyroscope and temperature sensor
 
-		//------------------------------------------------------------------//
-		// SETUP ACCELEROMETER AND AQUISITION DATA							//
-		//------------------------------------------------------------------//
+		//----------------------------------------------//
+		// SETUP ACCELEROMETER AND AQUISITION DATA	//
+		//----------------------------------------------//
 		i2c_setup();
 		i2c_wakeup_mpu6050(i2c);
 		i2c_setup_mpu6050(i2c, get_devconfig);
@@ -112,9 +112,9 @@ int main(void){
 		ledOff();					// DEBUG ONLY
 		timer2_disable();
 
-		//------------------------------------------------------------------//
-		// BLE CONNECTION AND DATA SENDING									//
-		//------------------------------------------------------------------//
+		//----------------------------------------------//
+		// BLE CONNECTION AND DATA SENDING		//
+		//----------------------------------------------//
 		
 		powerOn_ble();
 		usart_setup();
@@ -181,8 +181,6 @@ static void gpio_setup(void){
 			GPIO_MODE_OUTPUT_2_MHZ,
 			GPIO_CNF_OUTPUT_PUSHPULL,
 			GPIO8);
-
-
 	ledOff();
 }
 
@@ -192,7 +190,7 @@ static void gpio_setup(void){
  **************************************************************************/
 static void usart_setup(void){
 	
-	rcc_periph_clock_enable(RCC_GPIOA);		// USART1
+	rcc_periph_clock_enable(RCC_GPIOA);	// USART1
 	rcc_periph_clock_enable(RCC_USART1);	// USART1
 
 	// enable the USART1 interrupt
@@ -213,12 +211,12 @@ static void usart_setup(void){
 			GPIO_USART1_RX);
 
 	// setup USART1 parameters
-	usart_set_baudrate(		usart, 115200);
-	usart_set_databits(		usart, 8);
-	usart_set_stopbits(		usart, USART_STOPBITS_1);
-	usart_set_mode(			usart, USART_MODE_TX_RX);
-	usart_set_parity(		usart, USART_PARITY_NONE);
-	usart_set_flow_control(		usart,	USART_FLOWCONTROL_NONE);
+	usart_set_baudrate(	usart, 115200);
+	usart_set_databits(	usart, 8);
+	usart_set_stopbits(	usart, USART_STOPBITS_1);
+	usart_set_mode(		usart, USART_MODE_TX_RX);
+	usart_set_parity(	usart, USART_PARITY_NONE);
+	usart_set_flow_control(	usart,	USART_FLOWCONTROL_NONE);
 
 	// enable USART1 receive interrupt
 	USART_CR1(usart) |= USART_CR1_RXNEIE;
@@ -250,8 +248,8 @@ void usart1_isr(void){
 static void i2c_setup(void){
 	
 	rcc_periph_clock_enable(RCC_I2C1);
-	rcc_periph_clock_enable(RCC_GPIOB);		// I2C
-	rcc_periph_clock_enable(RCC_AFIO);		// EXTI
+	rcc_periph_clock_enable(RCC_GPIOB);	// I2C
+	rcc_periph_clock_enable(RCC_AFIO);	// EXTI
 
 	// Set alternate functions for the SCL and SDA pins of I2C1
 	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_10_MHZ,
@@ -260,10 +258,10 @@ static void i2c_setup(void){
 
 	i2c_reset(i2c);
 	i2c_peripheral_disable(i2c);
-	//--------------------------------------//
-	// Standard Mode:	i2c_speed_sm_100k	//
-	// Fast		Mode:	i2c_speed_fm_400k	//
-	//--------------------------------------//
+	//-----------------------------------------//
+	// Standard Mode:	i2c_speed_sm_100k  //
+	// Fast		Mode:	i2c_speed_fm_400k  //
+	//-----------------------------------------//
 	i2c_set_speed(i2c, i2c_speed_fm_400k, I2C_CR2_FREQ_24MHZ);
 	i2c_peripheral_enable(i2c);
 }
@@ -279,10 +277,10 @@ static void timer2_setup(uint8_t ticks){
 	nvic_enable_irq(NVIC_TIM2_IRQ);
 
 	//------------------------------------------------------//
-	// APB1 is running at 24MHZ --> APB1 prescaler = 1		//
-	// timer2 freq = APB1 / 2400 = 10 kHz	 				//
-	// (1/10kHz) x 10 ticks [0:9] = 1ms						//
-	// (1/10kHz) x 200 ticks [0:99] = 10ms					//
+	// APB1 is running at 24MHZ --> APB1 prescaler = 1	//
+	// timer2 freq = APB1 / 2400 = 10 kHz	 		//
+	// (1/10kHz) x 10 ticks [0:9] = 1ms			//
+	// (1/10kHz) x 200 ticks [0:99] = 10ms			//
 	//------------------------------------------------------//
 	
 	timer_set_prescaler(TIM2, 2400);
@@ -314,8 +312,8 @@ void tim2_isr(void){
 	timer_clear_flag(TIM2, TIM_SR_UIF);
 	
 	//--------------------------------------------------------------//
-	// TIMER MODE													//
-	// (READIND_DATA): Timer is used for 1kHz aquisition			//
+	// TIMER MODE							//
+	// (READIND_DATA): Timer is used for 1kHz aquisition		//
 	// (SENDING_DATA): Timer is used to limit BLE output data rate	//
 	//--------------------------------------------------------------//
 	if(timer_mode == READING_DATA){	
@@ -479,9 +477,9 @@ static void save_devconfig(void){
 	pwr_disable_backup_domain_write_protect();
 
 	//------------------------------------------------------//
-	// Save accel and rtc config at 16 bit BKP register		//
+	// Save accel and rtc config at 16 bit BKP register	//
 	// STM32F1 - Medium density: 10 DR x 16 bit = 20 bytes	//
-	// BKP_DR1: BACKUP_REGS_BASE + 0x04						//
+	// BKP_DR1: BACKUP_REGS_BASE + 0x04			//
 	//------------------------------------------------------//
 	
 	// clear all bits
@@ -579,9 +577,9 @@ static uint8_t *data_aquisition(){
 	static uint8_t 	accel_buffer[BUFFER_SIZE];
 	
 	//------------------------------------------------------//
-	// Aquisition: 3 axis (each of 2 bytes)					//
-	// number of samples: 1024	 							//
-	// 6 bytes * 1024 = 6144 bytes							//
+	// Aquisition: 3 axis (each of 2 bytes)			//
+	// number of samples: 1024	 			//
+	// 6 bytes * 1024 = 6144 bytes				//
 	//------------------------------------------------------//
 	
 	while(sample < NUM_SAMPLES){
@@ -607,16 +605,16 @@ static void ble_send_data(uint8_t *buffer){
 	uint16_t remaining_samples = 0;
 	
 	//--------------------------------------------------------------//
-	// ble_send_packet flag at 100Hz (10 ms)						//
-	//																//
+	// ble_send_packet flag at 100Hz (10 ms)			//
+	//								//
 	// payload size: 3 axis * 2 bytes/axis * 3 samples = 18 bytes	//
-	// payload full: 18 bytes + '\r' + '\n' =  20 bytes				// 
-	//																//
+	// payload full: 18 bytes + '\r' + '\n' =  20 bytes		// 
+	//								//
 	// SAMPLE PACKET FORMAT: (Ax_H, Ax_L, Ay_H, Ay_L, Az_H, Az_L )	//
-	//																//
-	// DATA	FORMAT:	 			int16_t Ax = (Ax_H << 8) | Ax_L		//
-	//	Ax_H	uint8_t			int16_t Ay = (Ay_H << 8) | Ay_L		//
-	//	Ax_L	uint8_t			int16_t Az = (Az_H << 8) | Az_L		//
+	//								//
+	// DATA	FORMAT:	 	int16_t Ax = (Ax_H << 8) | Ax_L		//
+	// Ax_H	uint8_t		int16_t Ay = (Ay_H << 8) | Ay_L		//
+	// Ax_L	uint8_t		int16_t Az = (Az_H << 8) | Az_L		//
 	//--------------------------------------------------------------//
 
 	while(sample < NUM_SAMPLES){
@@ -635,7 +633,7 @@ static void ble_send_data(uint8_t *buffer){
 			
 			}
 			//------------------------------------------------------//
-			// send 3 sample packets of accel buffer [0:1022]		//
+			// send 3 sample packets of accel buffer [0:1022]	//
 			//------------------------------------------------------//
 			else{
 				serial_write(buffer, 6*sample, 18);
