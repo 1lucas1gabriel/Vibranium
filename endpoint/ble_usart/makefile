@@ -2,7 +2,7 @@
 STATIC_LIB_NAME = ble_usart
 
 # Dependecy library
-DEFS		= -I../libopencm3/include -DSTM32F1 
+DEFS		= -I ../libopencm3/include -DSTM32F1 
 
 # Target-specific flags
 FP_FLAGS	?= -msoft-float

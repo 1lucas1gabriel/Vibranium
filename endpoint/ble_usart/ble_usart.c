@@ -7,18 +7,12 @@
 #include "ble_usart.h"
 
 volatile uint8_t	usart_rx_data;
-volatile bool 		flag_read_usart = false;
+volatile bool		flag_read_usart = false;
 
 // Config command options
-const char sens[] = {SCALE_2G, 
-					SCALE_4G, 
-					SCALE_8G, 
-					SCALE_16G};
+const char sens[] = {SCALE_2G, SCALE_4G, SCALE_8G, SCALE_16G};
 
-const char timers[] = {TIMER_5s, 
-						TIMER_10s, 
-						TIMER_5m, 
-						TIMER_10m};
+const char timers[] = {TIMER_5s, TIMER_10s, TIMER_5m, TIMER_10m};
 
 // Config setup by user (default config)
 DevConfigStruct devconfig = {SCALE_2G, TIMER_5s};
@@ -66,8 +60,8 @@ bool ble_recv_cmds(const char* cmds_list, uint8_t cmds_list_size){
 			
 			// -----------------------------------------------------//
 			// check if we recv any of spcfied cmds from usart/user //
-			// If we recv, this function unblocks 					//
-			// You can read usart_rx_data to obtain that cmd		//
+			// If we recv, this function unblocks 			//
+			// You can read usart_rx_data to obtain that cmd	//
 			// -----------------------------------------------------//
 			while(i < cmds_list_size){			
 				if(usart_rx_data == cmds_list[i]){				
@@ -100,22 +94,22 @@ bool ble_recv_config(void){
 			
 			// '(s)ensibility' config
 			case 's':
-					while(!ble_recv_cmds(sens, sizeof(sens)));
-					devconfig.sensitivity = usart_rx_data;							
-					config_mode = 't';
-					break;
+				while(!ble_recv_cmds(sens, sizeof(sens)));
+				devconfig.sensitivity = usart_rx_data;							
+				config_mode = 't';
+				break;
 
 			// 'alarm (t)imer' config
 			case 't':
-					while(!ble_recv_cmds(timers, sizeof(timers)));
-					devconfig.alarm_timer = usart_rx_data;	
-					config_mode = 'o';
-					break;
+				while(!ble_recv_cmds(timers, sizeof(timers)));
+				devconfig.alarm_timer = usart_rx_data;	
+				config_mode = 'o';
+				break;
 
 			// 'config (o)k'
 			case 'o': 
-					exit_config = true;
-					break;
+				exit_config = true;
+				break;
 		}
 		
 		// finished configuration

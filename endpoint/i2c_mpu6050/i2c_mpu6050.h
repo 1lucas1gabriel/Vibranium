@@ -8,13 +8,13 @@
 
 #include <libopencm3/stm32/i2c.h>
 
-#define MPU_ADDR		0x68
-#define PWR_MGMT_1		0x6B
-#define PWR_MGMT_2		0x6C
-#define INT_PIN_CFG		0x37
-#define INT_ENABLE		0x38
-#define INT_STATUS		0x3A
-#define SMPRT_DIV		0x19
+#define MPU_ADDR	0x68
+#define PWR_MGMT_1	0x6B
+#define PWR_MGMT_2	0x6C
+#define INT_PIN_CFG	0x37
+#define INT_ENABLE	0x38
+#define INT_STATUS	0x3A
+#define SMPRT_DIV	0x19
 #define ACCEL_CONFIG	0x1C
 #define ACCEL_XOUT_H	0x3B
 #define ACCEL_YOUT_H	0x3D

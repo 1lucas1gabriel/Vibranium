@@ -1,27 +1,33 @@
 '''
-@1lucas1gabriel - JAN/2021
+@1lucas1gabriel - AGO/2021
 
 Programa escaneia e conecta-se a endpoints BLE com o endereco MAC 
 cadastrado. Os dados brutos sao recebidos via notificacao e apos um 
 tratamento eh enviado a nuvem, por meio de uma requisicao HTTP POST.
 
-- UUID do servico de UART: FFE1
-- Handle do servico de UART: 0x0025
+- Bluetooth module: Bolutek HC09 - CC2541 Ti
+- UUID   - UART service: FFE1
+- Handle - UART service: 0x0025
 '''
 
 from bluepy.btle import Scanner, Peripheral, UUID
-from resources.gateway import ScanDelegate, DataHandler, PeriphDelegate, CloudConnection
+from gateway.BLE import ScanDelegate, PeriphDelegate
+from gateway.DataHandler import DataHandler
+from gateway.Cloud import Cloud
 
 
 #####################################################################
 # SETUP GATEWAY
 #####################################################################
-endpointMac     = "c8:df:84:34:ad:c0"
-gatewayMac      = "24:f5:aa:66:10:6e"
-equipmentID     = "MT01" 
-scanner = Scanner().withDelegate(ScanDelegate())
-dataMan = DataHandler()
-cloud = CloudConnection()
+endpointMac = "c8:df:84:34:ad:c0" 
+gatewayMac  = "24:f5:aa:66:10:6e"
+equipmentID = "MT01" 
+numPackets  = 342 # match with number of packets from acquisition device
+scanner     = Scanner().withDelegate(ScanDelegate())
+dataMan     = DataHandler(True, 'CSV', 'webService/data')
+cloud       = Cloud('ec2-URL.compute-1.amazonaws.com', 80)
+
+
 
 #####################################################################
 # BLUETOOH LOW ENERGY SCANNER - LOOP
@@ -39,6 +45,8 @@ while True:
                 cDev.setDelegate(cDelegate)
                 uartCharHnd = int('0x0025', 0)
 
+                #cDev.writeCharacteristic(uartCharHnd, b"\x30") # ONLY FOR UNBLOCK SENSOR WHEN BLOCKED
+
                 # Turn notifications on
                 cDev.writeCharacteristic(uartCharHnd + 1, b"\x01\x00")
                 
@@ -51,7 +59,7 @@ while True:
                         if cDev.waitForNotifications(2.0):
                             notificationsCounter += 1
 
-                            if (notificationsCounter == 342):
+                            if (notificationsCounter == numPackets):
                                 # After send all data, the sensor needs to receive x30 to go to standby
                                 cDev.writeCharacteristic(uartCharHnd, b"\x30")
                                 cDev.disconnect()
@@ -71,16 +79,14 @@ while True:
     # CLOUD CONNECTION
     ###################################################################
 
-    response = dataMan.checkNewFeatures()
+    response = dataMan.checkNewAcquisition()
     if response is False:
         print("Nothing to send! [Scanning again...]")
     else:
         try:
             print(response)
-            cloud.connect('ec2.aws.domain.com', 80)
-            endID = dataMan.info['endpointID']
+            endID = dataMan.info['endpointID'] #improve
             cloud.sendToCLoud(f'/v1/endpoints/{endID}/acquisition', response)
-            cloud.disconnect()
         
         except Exception as ex:
             print(str(ex))

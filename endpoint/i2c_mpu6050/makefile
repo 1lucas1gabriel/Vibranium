@@ -2,7 +2,7 @@
 STATIC_LIB_NAME = i2c_mpu6050
 
 # Dependecy library
-DEFS		= -I../libopencm3/include -DSTM32F1 
+DEFS		= -I ../libopencm3/include -DSTM32F1 
 
 # Target-specific flags
 FP_FLAGS	?= -msoft-float

@@ -2,28 +2,27 @@
  * MAIN PROGRAM - ACCELEROMETER BLE SYSTEM
  * @1lucas1gabriel - NOV/20
  *
- *	USART1
- *	PA9(TX)  --> AT-09 BLE (RX)
- *	PA10(RX) --> AT-09 BLE (TX)
- *	PA15	 --> AT-09 BLE (VCC)
+ * USART1
+ * PA9(TX)  --> AT-09 BLE (RX)
+ * PA10(RX) --> AT-09 BLE (TX)
+ * PA15	    --> AT-09 BLE (VCC)
  *
- *	I2C1
- *	PB6(SCL) --> (SCL) MPU6050
- *	PB7(SDA) --> (SDA) MPU6050
+ * I2C1
+ * PB6(SCL) --> (SCL) MPU6050
+ * PB7(SDA) --> (SDA) MPU6050
  *
- *	DEVELOPMENT LOGS
- *
- *	1.x - GPIO setup
- *	1.x - USART echo program
- *	1.x - Development and configuration of I2C functions and perph's
- *	1.x - RTC and alarm configuration
- *	1.x - Standy configuration (SLEEPDEEP System register and functions)
- *	1.x - Slow down clock from 72Mhz to 24Mhz (to decrease current consumption)
- *	1.x - Change I2C2 to I2C1 (pinout reasons)
- *  	1.x - BLE connection library
- *  	1.x - User configuration/ config mode					
- *	1.x - Acquision function with 1ms TIMER
- *  	1.x - BLE send with trigger 10 ms TIMER
+ * DEVELOPMENT LOGS
+ * 1 - GPIO setup
+ * 2 - USART echo program
+ * 3 - Development and configuration of I2C functions and perph's
+ * 4 - RTC and alarm configuration
+ * 5 - Standy configuration (SLEEPDEEP System register and functions)
+ * 6 - Slow down clock from 72Mhz to 24Mhz (to decrease current consumption)
+ * 7 - Change I2C2 to I2C1 (pinout reasons)
+ * 8 - BLE connection library
+ * 9 - User configuration/ config mode					
+ * 10 - Acquision function with 1ms TIMER
+ * 11 - BLE send with trigger 20 ms TIMER
  **************************************************************************/
 
 #include <libopencm3/stm32/rcc.h>
@@ -48,15 +47,15 @@
 #define NUM_SAMPLES	1024
 #define BUFFER_SIZE	6 * NUM_SAMPLES
 
-volatile bool timer_mode	= READING_DATA;
-volatile bool request_mpu6050 	= false;
-volatile bool ble_send_packet 	= false;
+volatile bool timer_mode = READING_DATA;
+volatile bool request_mpu6050 = false;
+volatile bool ble_send_packet = false;
 
 /**************************************************************************
  * PROTOTIPES
  **************************************************************************/
 static void clock_setup(void);
-static void gpio_setup(void);				// DEBUG ONLY
+static void gpio_setup(void); // DEBUG ONLY
 static void usart_setup(void);
 static void i2c_setup(void);
 static void timer2_setup(uint8_t ticks);
@@ -73,10 +72,10 @@ static void set_alarm(uint8_t (*f)(void));
 static void enter_stdby(void);
 
 static void save_devconfig(void);
-uint8_t 	get_devconfig(void);
+uint8_t get_devconfig(void);
 
 static void serial_write(uint8_t *buf, uint16_t begin, uint8_t n);
-static void serial_write_bin(uint8_t buf);	// DEBUG ONLY
+static void serial_write_bin(uint8_t buf); // DEBUG ONLY
 
 static uint8_t *data_aquisition(void);
 static void ble_send_data(uint8_t *buffer);
@@ -98,43 +97,43 @@ int main(void){
 	if(Mode == RUNNING){
 		// TO DO: disable gyroscope and temperature sensor
 
-		//----------------------------------------------//
-		// SETUP ACCELEROMETER AND AQUISITION DATA	//
-		//----------------------------------------------//
+		//-----------------------------------------//
+		// SETUP ACCELEROMETER AND AQUISITION DATA //
+		//-----------------------------------------//
 		i2c_setup();
 		i2c_wakeup_mpu6050(i2c);
 		i2c_setup_mpu6050(i2c, get_devconfig);
 
 		timer_mode = READING_DATA;
 		timer2_setup(10);
-		ledOn();					// DEBUG ONLY
+		ledOn();				// DEBUG ONLY
 		uint8_t *p_buf = data_aquisition();
-		ledOff();					// DEBUG ONLY
+		ledOff();				// DEBUG ONLY
 		timer2_disable();
 
-		//----------------------------------------------//
-		// BLE CONNECTION AND DATA SENDING		//
-		//----------------------------------------------//
+		//---------------------------------//
+		// BLE CONNECTION AND DATA SENDING //
+		//---------------------------------//
 		
 		powerOn_ble();
 		usart_setup();
 		while(!ble_connected());
-		ledOn();					// DEBUG ONLY
+		ledOn();				// DEBUG ONLY
 
 		// wait command for sending data
 		while(!ble_recv_cmd('1'));
-		ledOff();					// DEBUG ONLY
+		ledOff();				// DEBUG ONLY
 
 		timer_mode = SENDING_DATA;
-		timer2_setup(100);
-		ledOn();					// DEBUG ONLY
+		timer2_setup(200);
+		ledOn();				// DEBUG ONLY
 		ble_send_data(p_buf);
 		timer2_disable();
 	
 		// Waiting disconnection
 		while(!ble_recv_cmd('0'));
 		delay(10);
-		ledOff();					// DEBUG ONLY
+		ledOff();				// DEBUG ONLY
 		powerOff_ble();
 	}
 
@@ -145,11 +144,11 @@ int main(void){
 
 		// wait for connection with user
 		while(!ble_connected());
-		ledOn();					// DEBUG ONLY
+		ledOn();				// DEBUG ONLY
 
 		// wait for user config
 		while(!ble_recv_config());
-		ledOff();					// DEBUG ONLY
+		ledOff();				// DEBUG ONLY
 
 		save_devconfig();
 		powerOff_ble();
@@ -175,7 +174,7 @@ static void clock_setup(void){
  **************************************************************************/
 static void gpio_setup(void){
 	
-	rcc_periph_clock_enable(RCC_GPIOA);		// LED
+	rcc_periph_clock_enable(RCC_GPIOA); // LED
 	gpio_set_mode(
 			GPIOA,
 			GPIO_MODE_OUTPUT_2_MHZ,
@@ -258,11 +257,11 @@ static void i2c_setup(void){
 
 	i2c_reset(i2c);
 	i2c_peripheral_disable(i2c);
-	//-----------------------------------------//
-	// Standard Mode:	i2c_speed_sm_100k  //
-	// Fast		Mode:	i2c_speed_fm_400k  //
-	//-----------------------------------------//
-	i2c_set_speed(i2c, i2c_speed_fm_400k, I2C_CR2_FREQ_24MHZ);
+	//----------------------------------//
+	// Standard Mode: i2c_speed_sm_100k //
+	// Fast Mode:     i2c_speed_fm_400k //
+	//----------------------------------//
+	i2c_set_speed(i2c, i2c_speed_fm_400k, 24); // 24MHZ
 	i2c_peripheral_enable(i2c);
 }
 
@@ -276,12 +275,12 @@ static void timer2_setup(uint8_t ticks){
 	rcc_periph_clock_enable(RCC_TIM2);
 	nvic_enable_irq(NVIC_TIM2_IRQ);
 
-	//------------------------------------------------------//
-	// APB1 is running at 24MHZ --> APB1 prescaler = 1	//
-	// timer2 freq = APB1 / 2400 = 10 kHz	 		//
-	// (1/10kHz) x 10 ticks [0:9] = 1ms			//
-	// (1/10kHz) x 200 ticks [0:99] = 10ms			//
-	//------------------------------------------------------//
+	//--------------------------------------------------//
+	// APB1 is running at 24MHZ --> APB1 prescaler = 1  //
+	// timer2 freq = APB1 / 2400 = 10 kHz               //
+	// (1/10kHz) x 10 ticks [0:9] = 1ms                 //
+	// (1/10kHz) x 200 ticks [0:99] = 10ms              //
+	//--------------------------------------------------//
 	
 	timer_set_prescaler(TIM2, 2400);
 	timer_set_period(TIM2, ticks - 1); 
@@ -476,11 +475,11 @@ static void save_devconfig(void){
 	// Allow backup domain registers to be changed
 	pwr_disable_backup_domain_write_protect();
 
-	//------------------------------------------------------//
-	// Save accel and rtc config at 16 bit BKP register	//
-	// STM32F1 - Medium density: 10 DR x 16 bit = 20 bytes	//
-	// BKP_DR1: BACKUP_REGS_BASE + 0x04			//
-	//------------------------------------------------------//
+	//-----------------------------------------------------//
+	// Save accel and rtc config at 16 bit BKP register    //
+	// STM32F1 - Medium density: 10 DR x 16 bit = 20 bytes //
+	// BKP_DR1: BACKUP_REGS_BASE + 0x04                    //
+	//-----------------------------------------------------//
 	
 	// clear all bits
 	BKP_DR1 = 0;	
@@ -576,11 +575,11 @@ static uint8_t *data_aquisition(){
 	uint16_t 		offset = 0;
 	static uint8_t 	accel_buffer[BUFFER_SIZE];
 	
-	//------------------------------------------------------//
-	// Aquisition: 3 axis (each of 2 bytes)			//
-	// number of samples: 1024	 			//
-	// 6 bytes * 1024 = 6144 bytes				//
-	//------------------------------------------------------//
+	//--------------------------------------//
+	// Aquisition: 3 axis (each of 2 bytes) //
+	// number of samples: 1024              //
+	// 6 bytes * 1024 = 6144 bytes          //
+	//--------------------------------------//
 	
 	while(sample < NUM_SAMPLES){
 
@@ -605,14 +604,14 @@ static void ble_send_data(uint8_t *buffer){
 	uint16_t remaining_samples = 0;
 	
 	//--------------------------------------------------------------//
-	// ble_send_packet flag at 100Hz (10 ms)			//
+	// ble_send_packet flag at 200Hz (20 ms)			//
 	//								//
 	// payload size: 3 axis * 2 bytes/axis * 3 samples = 18 bytes	//
 	// payload full: 18 bytes + '\r' + '\n' =  20 bytes		// 
 	//								//
-	// SAMPLE PACKET FORMAT: (Ax_H, Ax_L, Ay_H, Ay_L, Az_H, Az_L )	//
+	// PACKET FORMAT: (Ax_H, Ax_L, Ay_H, Ay_L, Az_H, Az_L )		//
 	//								//
-	// DATA	FORMAT:	 	int16_t Ax = (Ax_H << 8) | Ax_L		//
+	// DATA	FORMAT:		int16_t Ax = (Ax_H << 8) | Ax_L		//
 	// Ax_H	uint8_t		int16_t Ay = (Ay_H << 8) | Ay_L		//
 	// Ax_L	uint8_t		int16_t Az = (Az_H << 8) | Az_L		//
 	//--------------------------------------------------------------//
@@ -621,9 +620,9 @@ static void ble_send_data(uint8_t *buffer){
 		if(ble_send_packet){
 			ble_send_packet = false;
 
-			//------------------------------------------------------//
-			// send remaining sample packets of accel buffer [1023]	//
-			//------------------------------------------------------//			
+			//-----------------------------------------------//
+			// send remaining packets of accel buffer [1023] //
+			//-----------------------------------------------//			
 			remaining_samples = NUM_SAMPLES - sample;
 			if(remaining_samples < 3){
 				if(remaining_samples == 1){
@@ -632,9 +631,9 @@ static void ble_send_data(uint8_t *buffer){
 				}
 			
 			}
-			//------------------------------------------------------//
-			// send 3 sample packets of accel buffer [0:1022]	//
-			//------------------------------------------------------//
+			//---------------------------------------------------//
+			// send 3 sample per packet of accel buffer [0:1022] //
+			//---------------------------------------------------//
 			else{
 				serial_write(buffer, 6*sample, 18);
 				sample += 3;
